@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from backend.database import Base
 from pydantic import BaseModel, EmailStr
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -18,11 +19,13 @@ class User(Base):
     intro_scores = relationship("SelfIntroductionScore", back_populates="user")
     profile = relationship("Profile", back_populates="user", uselist=False)
 
+
 class UserSignup(BaseModel):
     username: str
     email: EmailStr
     password: str
     fullname: str
+
 
 # Import Profile Here to Avoid Import Issues
 from backend.models.profile import Profile

@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Float, DateTime
+from sqlalchemy import Column, Integer, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from backend.database import Base
-import datetime
+
 
 class AI_Feedback(Base):
     __tablename__ = "ai_feedback"

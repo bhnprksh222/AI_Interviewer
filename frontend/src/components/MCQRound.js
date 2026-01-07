@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
-import "../../src/MCQRound.css"; // Import the updated CSS file
+import { useNavigate } from "react-router-dom";
+import "../../src/MCQRound.css";
 import axios from "axios";
 import { BACKEND_URL } from "./config";
 
@@ -10,7 +10,7 @@ const MCQRound = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({}); // Store selected answers
   const [timer, setTimer] = useState(1200); // 20-minute countdown timer
 
-  const navigate = useNavigate(); // ✅ Initialize navigate
+  const navigate = useNavigate(); // Initialize navigate
 
   useEffect(() => {
     // Fetch MCQs from the backend on component mount

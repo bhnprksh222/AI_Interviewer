@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.database import Base  # Correct import path for Base
 
+
 class MCQRoundScore(Base):
     __tablename__ = "mcq_round_scores"
 

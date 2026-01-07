@@ -7,7 +7,7 @@ from flask_jwt_extended import (
 )
 import os
 
-# ✅ Manually load `.env` file
+# Manually load `.env` file
 env_path = os.path.join(
     os.path.dirname(__file__), "..", ".env"
 )  # Adjusted to load from project root
@@ -18,17 +18,17 @@ if os.path.exists(env_path):
                 key, value = line.strip().split("=", 1)
                 os.environ[key] = value
 
-# ✅ Get environment variables manually
+# Get environment variables manually
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///users.db")
 SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key")
 
-# ✅ Debugging: Print environment values to confirm they are loaded
+# Debugging: Print environment values to confirm they are loaded
 print(f"📢 DATABASE_URL from .env: {DATABASE_URL}")
 print(f"📢 SECRET_KEY from .env: {SECRET_KEY}")
 
 app = Flask(__name__)
 
-# ✅ Load Configurations
+# Load Configurations
 app.config["DATABASE_URI"] = DATABASE_URL
 app.config["SECRET_KEY"] = SECRET_KEY
 
@@ -44,7 +44,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
 
 
-# ✅ FIX: Replacing `@app.before_first_request` with `init_app()`
+# FIX: Replacing `@app.before_first_request` with `init_app()`
 def init_app():
     with app.app_context():
         db.create_all()
