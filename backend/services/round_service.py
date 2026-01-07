@@ -1,5 +1,10 @@
 from sqlalchemy.orm import Session
-from backend.models.round_scores import SelfIntroductionScore, MCQRoundScore, TechnicalRoundScore
+from backend.models.round_scores import (
+    SelfIntroductionScore,
+    MCQRoundScore,
+    TechnicalRoundScore,
+)
+
 
 def save_mcq_score(user_id: int, total_score: float, feedback: str, db: Session):
     score = MCQRoundScore(user_id=user_id, total_score=total_score, feedback=feedback)
@@ -9,13 +14,15 @@ def save_mcq_score(user_id: int, total_score: float, feedback: str, db: Session)
     print(f"✅ MCQ score saved: {score}")
 
 
-def save_technical_score(user_id: int, comm: float, tech: float, conf: float, feedback: str, db: Session):
+def save_technical_score(
+    user_id: int, comm: float, tech: float, conf: float, feedback: str, db: Session
+):
     score = TechnicalRoundScore(
         user_id=user_id,
         communication_score=comm,
         technical_knowledge_score=tech,
         confidence_score=conf,
-        feedback=feedback
+        feedback=feedback,
     )
     db.add(score)
     db.commit()
@@ -23,18 +30,21 @@ def save_technical_score(user_id: int, comm: float, tech: float, conf: float, fe
     print(f"✅ Technical round score saved: {score}")
 
 
-def save_intro_score(user_id: int, comm: float, conf: float, prof: float, feedback: str, db: Session):
+def save_intro_score(
+    user_id: int, comm: float, conf: float, prof: float, feedback: str, db: Session
+):
     score = SelfIntroductionScore(
         user_id=user_id,
         communication_score=comm,
         confidence_score=conf,
         professionalism_score=prof,
-        feedback=feedback
+        feedback=feedback,
     )
     db.add(score)
     db.commit()
     db.refresh(score)
     print(f"✅ Self-introduction score saved: {score}")
+
 
 def get_self_intro_scores(user_id: int, db: Session):
     """

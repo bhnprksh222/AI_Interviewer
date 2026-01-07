@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import Select from "react-select"; 
-import "../../src/UserProfileUpdate.css"; 
+import Select from "react-select";
+import "../../src/UserProfileUpdate.css";
 import { BACKEND_URL } from "./config";
 import { useAuth } from '../context/AuthContext';
 
@@ -163,7 +163,7 @@ const UserProfileUpdate = () => {
     try {
       const token = localStorage.getItem("access_token");
       const endpoint = isLoading ? "createProfile" : "updateProfile";
-      
+
       const response = await axios({
         method: isLoading ? 'post' : 'put',
         url: `${BACKEND_URL}/profile/${endpoint}/`,
@@ -176,7 +176,7 @@ const UserProfileUpdate = () => {
 
       console.log("Profile saved successfully:", response.data);
       alert("Profile saved successfully!");
-      
+
     } catch (error) {
       if (error.response?.status === 401) {
         alert("Your session has expired. Please login again.");

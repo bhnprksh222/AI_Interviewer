@@ -35,7 +35,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # ✅ Create JWT Token
-def create_jwt_token(data: dict, expires_delta: timedelta = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)):
+def create_jwt_token(
+    data: dict, expires_delta: timedelta = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=30)
     to_encode.update({"exp": expire})
@@ -60,7 +62,9 @@ def verify_jwt_token(token: str):
 
 
 # ✅ Get Current User (NEWLY ADDED FUNCTION)
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: int = payload.get("user_id")

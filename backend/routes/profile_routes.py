@@ -3,7 +3,10 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models.profile import Profile
 from backend.models.user import User
-from backend.services.auth_service import get_current_user, verify_jwt_token  # ✅ Import verify_jwt_token
+from backend.services.auth_service import (
+    get_current_user,
+    verify_jwt_token,
+)  # ✅ Import verify_jwt_token
 from pydantic import BaseModel
 from typing import List, Optional
 import os
@@ -15,16 +18,19 @@ router = APIRouter()
 UPLOAD_FOLDER = "uploads/resumes"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 # ✅ Define Profile Update Model
 class CompanyExperience(BaseModel):
     company_name: str
     years: str
+
 
 class Education(BaseModel):
     degree: str
     institution: str
     year_of_passing: str
     grade_or_percentage: Optional[str]
+
 
 class UpdateProfileRequest(BaseModel):
     company_experience: List[CompanyExperience]
@@ -33,9 +39,12 @@ class UpdateProfileRequest(BaseModel):
     education: List[Education]
     certifications: List[str]
 
+
 # ✅ GET Profile
 @router.get("/", tags=["Profile Management"])
-def get_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_profile(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+):
     profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
 
     if not profile:
@@ -51,23 +60,29 @@ def get_profile(current_user: User = Depends(get_current_user), db: Session = De
         "resume_file": profile.resume_file,
     }
 
+
 # ✅ POST Profile (For Postman Testing)
 @router.post("/", tags=["Profile Management"])
 def get_profile_with_token(token: str, db: Session = Depends(get_db)):
     payload = verify_jwt_token(token)  # ✅ Use verify_jwt_token to decode the token
 
     if payload is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token"
+        )
 
     user = db.query(User).filter(User.id == payload["user_id"]).first()
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
+        )
 
     profile = db.query(Profile).filter(Profile.user_id == user.id).first()
     if not profile:
         return {"message": "Profile not found", "skills": []}
 
     return profile
+
 
 # ✅ PUT Profile (Explicit Update Profile Endpoint)
 @router.put("/updateProfile/", tags=["Profile Management"])
@@ -112,6 +127,7 @@ async def update_profile_explicit(
 
     db.commit()
     return {"message": "Profile updated successfully"}
+
 
 # ✅ POST Profile (Create Profile)
 @router.post("/createProfile/", tags=["Profile Management"])

@@ -3,12 +3,18 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from backend.database import get_db
 from backend.models.user import User
-from backend.services.auth_service import hash_password, verify_password, create_jwt_token, verify_jwt_token
+from backend.services.auth_service import (
+    hash_password,
+    verify_password,
+    create_jwt_token,
+    verify_jwt_token,
+)
 from pydantic import BaseModel, EmailStr
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
 
 # ✅ User Signup Model
 class SignupModel(BaseModel):
@@ -56,11 +62,10 @@ def signup(user: SignupModel, db: Session = Depends(get_db)):
 @router.post("/login/")
 def login(user: LoginModel, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
-    if not existing_user or not verify_password(user.password, existing_user.hashed_password):
+    if not existing_user or not verify_password(
+        user.password, existing_user.hashed_password
+    ):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     token = create_jwt_token({"user_id": existing_user.id})
     return {"access_token": token, "token_type": "bearer"}  # Ensure this format
-
-
-

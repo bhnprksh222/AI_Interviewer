@@ -75,4 +75,4 @@ const Footer = ({ isAuthenticated = false }) => {
   );
 };
 
-export default Footer; 
+export default Footer;

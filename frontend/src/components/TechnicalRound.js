@@ -181,7 +181,7 @@ const TechnicalRound = () => {
 
       const formData = new FormData();
       formData.append("audio_file", audioBlob, `answer_${questionCount + 1}.wav`);
-      
+
       const sttRes = await axios.post(
         `${BACKEND_URL}/api/speechToText/`,
         formData,
@@ -327,7 +327,7 @@ const TechnicalRound = () => {
 
         {isNextVisible && (
           <div className="next-button-container">
-            <button 
+            <button
               className={`next-button ${isNextVisible ? "" : "disabled"}`}
               onClick={() => handleNavigation("/dashboard")}
               disabled={!isNextVisible}

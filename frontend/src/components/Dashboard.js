@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "./config";
 import { useAuth } from '../context/AuthContext';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
          RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
          BarChart, Bar, ComposedChart, Area } from 'recharts';
 
@@ -14,11 +14,11 @@ const ProjectInfo = () => (
     <h2>Welcome to AI Interviewer</h2>
     <div className="project-description">
       <p>
-        The AI Interviewer is a smart, interactive platform designed to simulate real interview 
-        experiences using advanced AI models. It guides users through different rounds—Self Introduction, 
+        The AI Interviewer is a smart, interactive platform designed to simulate real interview
+        experiences using advanced AI models. It guides users through different rounds—Self Introduction,
         Technical Questions, and MCQs—using voice prompts and evaluates their responses in real-time.
       </p>
-      
+
       <div className="features">
         <h3>Key Features</h3>
         <div className="feature-grid">
@@ -44,7 +44,7 @@ const ProjectInfo = () => (
       <div className="goal-section">
         <h3>Our Goal</h3>
         <p>
-          The goal is to help users practice, improve, and gain confidence in interviews using 
+          The goal is to help users practice, improve, and gain confidence in interviews using
           personalized AI feedback.
         </p>
       </div>
@@ -96,7 +96,7 @@ const Dashboard = () => {
 
       const missingFields = [];
       for (const [field, label] of Object.entries(requiredFields)) {
-        if (!profile[field] || 
+        if (!profile[field] ||
             (Array.isArray(profile[field]) && profile[field].length === 0) ||
             (typeof profile[field] === 'string' && profile[field].trim() === '')) {
           missingFields.push(label);
@@ -206,7 +206,7 @@ const Dashboard = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', margin: '20px 0' }}>
               {/* Trend Line Chart */}
-              <div className="chart-container" style={{ 
+              <div className="chart-container" style={{
                 background: '#fff',
                 padding: '20px',
                 borderRadius: '8px',
@@ -219,7 +219,7 @@ const Dashboard = () => {
                   </div>
                 </h3>
                 <ResponsiveContainer width="100%" height={300}>
-                  <ComposedChart 
+                  <ComposedChart
                     data={chartData}
                     margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
                   >
@@ -230,23 +230,23 @@ const Dashboard = () => {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                    <XAxis 
-                      dataKey="dateDisplay" 
+                    <XAxis
+                      dataKey="dateDisplay"
                       tickFormatter={(date) => date}
-                      label={{ 
-                        value: 'Interview Timeline', 
-                        position: 'bottom', 
+                      label={{
+                        value: 'Interview Timeline',
+                        position: 'bottom',
                         offset: 0,
                         style: { textAnchor: 'middle', fill: '#666', fontSize: '0.9em' }
                       }}
                       tick={{ fill: '#666', fontSize: 12 }}
                       stroke="#666"
                     />
-                    <YAxis 
+                    <YAxis
                       domain={[0, 10]}
-                      label={{ 
-                        value: 'Performance Score', 
-                        angle: -90, 
+                      label={{
+                        value: 'Performance Score',
+                        angle: -90,
                         position: 'insideLeft',
                         style: { textAnchor: 'middle', fill: '#666', fontSize: '0.9em' }
                       }}
@@ -254,7 +254,7 @@ const Dashboard = () => {
                       stroke="#666"
                       tickCount={6}
                     />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         border: 'none',
@@ -265,7 +265,7 @@ const Dashboard = () => {
                       formatter={(value, name) => [`${Number(value).toFixed(1)} / 10`, name]}
                       labelFormatter={(date) => `Interview Date: ${date}`}
                     />
-                    <Legend 
+                    <Legend
                       verticalAlign="top"
                       align="center"
                       height={36}
@@ -276,11 +276,11 @@ const Dashboard = () => {
                         fontWeight: 500
                       }}
                     />
-                    <Area 
-                      type="monotone" 
-                      dataKey="communication" 
+                    <Area
+                      type="monotone"
+                      dataKey="communication"
                       fill="url(#colorComm)"
-                      stroke="#8884d8" 
+                      stroke="#8884d8"
                       name="Communication"
                       strokeWidth={2}
                     />
@@ -290,14 +290,14 @@ const Dashboard = () => {
                       { key: 'mcq', name: 'MCQ Score', color: '#ff7300' },
                       { key: 'technical', name: 'Technical Knowledge', color: '#0088fe' }
                     ].map((metric) => (
-                      <Line 
+                      <Line
                         key={metric.key}
-                        type="monotone" 
-                        dataKey={metric.key} 
+                        type="monotone"
+                        dataKey={metric.key}
                         name={metric.name}
                         stroke={metric.color}
                         strokeWidth={2}
-                        dot={{ 
+                        dot={{
                           r: 4,
                           strokeWidth: 2,
                           fill: '#fff',
@@ -317,7 +317,7 @@ const Dashboard = () => {
               </div>
 
               {/* Radar Chart for Latest Scores */}
-              <div className="chart-container" style={{ 
+              <div className="chart-container" style={{
                 background: '#fff',
                 padding: '20px',
                 borderRadius: '8px',
@@ -344,7 +344,7 @@ const Dashboard = () => {
                       axisLine={{ stroke: '#666' }}
                       tickCount={6}
                     />
-                    <Tooltip 
+                    <Tooltip
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         border: 'none',
@@ -373,7 +373,7 @@ const Dashboard = () => {
               </div>
 
               {/* Bar Chart for Average Scores */}
-              <div className="chart-container" style={{ 
+              <div className="chart-container" style={{
                 background: '#fff',
                 padding: '20px',
                 borderRadius: '8px',
@@ -387,7 +387,7 @@ const Dashboard = () => {
                   </div>
                 </h3>
               <ResponsiveContainer width="100%" height={300}>
-                  <BarChart 
+                  <BarChart
                     data={[{
                       communication: chartData.reduce((acc, curr) => acc + curr.communication, 0) / chartData.length,
                       confidence: chartData.reduce((acc, curr) => acc + curr.confidence, 0) / chartData.length,
@@ -398,26 +398,26 @@ const Dashboard = () => {
                     margin={{ top: 40, right: 30, left: 20, bottom: 20 }}
                   >
                   <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis 
+                    <XAxis
                       dataKey="name"
-                      label={{ 
-                        value: 'Interview Categories', 
-                        position: 'bottom', 
+                      label={{
+                        value: 'Interview Categories',
+                        position: 'bottom',
                         offset: 0,
                         style: { textAnchor: 'middle', fill: '#666', fontSize: '0.9em' }
                       }}
                     />
-                    <YAxis 
+                    <YAxis
                       domain={[0, 10]}
-                      label={{ 
-                        value: 'Average Score', 
-                        angle: -90, 
+                      label={{
+                        value: 'Average Score',
+                        angle: -90,
                         position: 'insideLeft',
                         style: { textAnchor: 'middle', fill: '#666', fontSize: '0.9em' }
                       }}
                       tickCount={6}
                     />
-                    <Tooltip 
+                    <Tooltip
                       cursor={{ fill: 'rgba(0,0,0,0.05)' }}
                       contentStyle={{
                         backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -428,7 +428,7 @@ const Dashboard = () => {
                       }}
                       formatter={(value) => [`${Number(value).toFixed(1)} / 10`]}
                     />
-                    <Legend 
+                    <Legend
                       verticalAlign="top"
                       align="center"
                       height={36}
@@ -439,9 +439,9 @@ const Dashboard = () => {
                         fontWeight: 500
                       }}
                     />
-                    <Bar 
-                      dataKey="communication" 
-                      name="Communication" 
+                    <Bar
+                      dataKey="communication"
+                      name="Communication"
                       fill="#8884d8"
                       radius={[4, 4, 0, 0]}
                       label={{
@@ -451,9 +451,9 @@ const Dashboard = () => {
                         fill: '#666'
                       }}
                     />
-                    <Bar 
-                      dataKey="confidence" 
-                      name="Confidence" 
+                    <Bar
+                      dataKey="confidence"
+                      name="Confidence"
                       fill="#82ca9d"
                       radius={[4, 4, 0, 0]}
                       label={{
@@ -463,9 +463,9 @@ const Dashboard = () => {
                         fill: '#666'
                       }}
                     />
-                    <Bar 
-                      dataKey="professionalism" 
-                      name="Professionalism" 
+                    <Bar
+                      dataKey="professionalism"
+                      name="Professionalism"
                       fill="#ffc658"
                       radius={[4, 4, 0, 0]}
                       label={{
@@ -475,9 +475,9 @@ const Dashboard = () => {
                         fill: '#666'
                       }}
                     />
-                    <Bar 
-                      dataKey="mcq" 
-                      name="MCQ Score" 
+                    <Bar
+                      dataKey="mcq"
+                      name="MCQ Score"
                       fill="#ff7300"
                       radius={[4, 4, 0, 0]}
                       label={{
@@ -487,9 +487,9 @@ const Dashboard = () => {
                         fill: '#666'
                       }}
                     />
-                    <Bar 
-                      dataKey="technical" 
-                      name="Technical Knowledge" 
+                    <Bar
+                      dataKey="technical"
+                      name="Technical Knowledge"
                       fill="#0088fe"
                       radius={[4, 4, 0, 0]}
                       label={{
@@ -510,7 +510,7 @@ const Dashboard = () => {
                 .animated-dot {
                   animation: pulse 1s infinite;
                 }
-                
+
                 @keyframes pulse {
                   0% { r: 6; }
                   50% { r: 8; }
@@ -520,8 +520,8 @@ const Dashboard = () => {
             </style>
 
             {/* Overall Score Display with Gradient */}
-            <div className="overall-score-container" style={{ 
-              marginTop: '20px', 
+            <div className="overall-score-container" style={{
+              marginTop: '20px',
               textAlign: 'center',
               background: '#fff',
               padding: '20px',
@@ -531,7 +531,7 @@ const Dashboard = () => {
               {summary && (
                 <>
                   <h3 style={{ color: '#2c3e50', marginBottom: '15px' }}>Overall Score</h3>
-                  <div 
+                  <div
                     style={{
                       display: 'inline-block',
                       padding: '25px 50px',
@@ -551,20 +551,20 @@ const Dashboard = () => {
                         if (score <= 40) {
                           // Red to Orange (0-40%)
                           const ratio = score / 40;
-                          return `linear-gradient(135deg, 
-                            rgb(220, 53, 69) ${100 - ratio * 100}%, 
+                          return `linear-gradient(135deg,
+                            rgb(220, 53, 69) ${100 - ratio * 100}%,
                             rgb(255, 123, 0) ${ratio * 100}%)`;
                         } else if (score <= 70) {
                           // Orange to Yellow (41-70%)
                           const ratio = (score - 40) / 30;
-                          return `linear-gradient(135deg, 
-                            rgb(255, 123, 0) ${100 - ratio * 100}%, 
+                          return `linear-gradient(135deg,
+                            rgb(255, 123, 0) ${100 - ratio * 100}%,
                             rgb(255, 193, 7) ${ratio * 100}%)`;
                         } else {
                           // Yellow to Green (71-100%)
                           const ratio = (score - 70) / 30;
-                          return `linear-gradient(135deg, 
-                            rgb(255, 193, 7) ${100 - ratio * 100}%, 
+                          return `linear-gradient(135deg,
+                            rgb(255, 193, 7) ${100 - ratio * 100}%,
                             rgb(40, 167, 69) ${ratio * 100}%)`;
                         }
                       })(),
@@ -583,9 +583,9 @@ const Dashboard = () => {
                       (summary.self_intro.length + summary.mcq.length + summary.technical.length) * 10
                     ).toFixed(1)}%
                   </div>
-                  <div style={{ 
-                    fontSize: '14px', 
-                    color: '#666', 
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#666',
                     marginTop: '10px',
                     fontStyle: 'italic'
                   }}>

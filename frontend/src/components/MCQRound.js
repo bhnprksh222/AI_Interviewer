@@ -53,7 +53,7 @@ const MCQRound = () => {
 
       // Extract and parse the questions
       const questions = data.questions;
-      
+
       // Add unique IDs to each question
       const questionsWithIds = questions.map((question, index) => ({
         ...question,

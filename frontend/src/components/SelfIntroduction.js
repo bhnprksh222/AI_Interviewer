@@ -121,7 +121,7 @@ const SelfIntroduction = () => {
           const stopAudio = new Audio(`${BACKEND_URL}/static/${stopFile}`);
           setSubtitle(closingSubtitle);
           setShowSubtitle(true);
-          
+
           stopAudio.play().catch((error) => {
             console.error("Error playing audio:", error);
             setIsBlinking(false);

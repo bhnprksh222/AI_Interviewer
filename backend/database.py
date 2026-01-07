@@ -8,10 +8,9 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 
-
 # ✅ Debugging output
 if DATABASE_URL:
-    print(f"✅ Success: DATABASE_URL Loaded")
+    print("✅ Success: DATABASE_URL Loaded")
 
 if not DATABASE_URL:
     raise ValueError("❌ ERROR: DATABASE_URL is not set! Check your .env file.")
@@ -20,6 +19,7 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 # ✅ Dependency function for getting DB session
 def get_db():

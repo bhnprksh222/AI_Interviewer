@@ -2,8 +2,9 @@
 import os
 from groq import Groq
 from dotenv import dotenv_values
+
 # ✅ Reference the `.env` file from the root directory
-env_path = os.path.join(os.path.dirname(__file__), "..","..", ".env")
+env_path = os.path.join(os.path.dirname(__file__), "..", "..", ".env")
 
 # ✅ Load environment variables safely
 env_values = dotenv_values(env_path)
@@ -29,7 +30,7 @@ try:
             prompt="Specify context or spelling",  # Optional prompt
             response_format="json",  # Optional response format
             language="en",  # Language of the audio
-            temperature=0.0  # Optional: 0.0 means deterministic output
+            temperature=0.0,  # Optional: 0.0 means deterministic output
         )
     print("✅ Transcription response:", transcription)
 

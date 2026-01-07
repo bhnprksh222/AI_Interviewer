@@ -16,7 +16,7 @@ app = FastAPI()
 # Configure CORS
 ALLOWED_ORIGINS = [
     "https://ai-interviewer-lilac.vercel.app",
-    "https://ai-interviewer-ciu9.onrender.com"
+    "https://ai-interviewer-ciu9.onrender.com",
 ]
 
 app.add_middleware(
@@ -32,8 +32,11 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Include routers
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
-app.include_router(profile_routes.router, prefix="/profile", tags=["Profile Management"])
+app.include_router(
+    profile_routes.router, prefix="/profile", tags=["Profile Management"]
+)
 app.include_router(interview_router, prefix="/api", tags=["Interview"])
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -41,12 +44,15 @@ async def startup_event():
     Base.metadata.create_all(bind=engine)
     print("✅ Database initialized successfully")
 
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the AI Interview Preparation API"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     uvicorn.run("backend.main:app", host=host, port=port, reload=True)

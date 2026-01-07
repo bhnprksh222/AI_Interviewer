@@ -16,11 +16,23 @@ import re
 from backend.database import get_db
 from backend.models.user import User
 from backend.models.profile import Profile
-from backend.models.round_scores import MCQRoundScore, TechnicalRoundScore, SelfIntroductionScore
-from backend.services.round_service import save_mcq_score, save_technical_score, save_intro_score, get_mcq_scores, get_technical_scores, get_self_intro_scores
+from backend.models.round_scores import (
+    MCQRoundScore,
+    TechnicalRoundScore,
+    SelfIntroductionScore,
+)
+from backend.services.round_service import (
+    save_mcq_score,
+    save_technical_score,
+    save_intro_score,
+    get_mcq_scores,
+    get_technical_scores,
+    get_self_intro_scores,
+)
 from backend.services.auth_service import get_current_user
 import pinecone
 from sentence_transformers import SentenceTransformer
+
 # from llama_cpp import Llama
 from pinecone import Pinecone, ServerlessSpec
 from groq import Groq
@@ -30,7 +42,6 @@ import torch
 
 DetectorFactory.seed = 0
 router = APIRouter()
-
 
 
 # ✅ Load environment variables
@@ -47,7 +58,7 @@ if not PINECONE_API_KEY:
 
 # ✅ Initialize Pinecone with supported region for free-tier users
 pc = Pinecone(api_key=PINECONE_API_KEY)
-index_name = 'aiinterviewer'
+index_name = "aiinterviewer"
 allowed_region = "us-east-1"  # ✅ Use this to avoid INVALID_ARGUMENT error
 
 # ✅ Create index only if not exists
@@ -57,28 +68,29 @@ if index_name not in existing_indexes:
         name=index_name,
         dimension=384,  # Reduced dimension size for better space efficiency
         metric="cosine",
-        spec=ServerlessSpec(cloud="aws", region=allowed_region)
+        spec=ServerlessSpec(cloud="aws", region=allowed_region),
     )
 
 # Initialize models
 index = pc.Index(index_name)
 # Initialize embedding model using a smaller but efficient model
-embedding_model = SentenceTransformer('all-MiniLM-L6-v2')  # Smaller model with 384 dimensions
+embedding_model = SentenceTransformer(
+    "all-MiniLM-L6-v2"
+)  # Smaller model with 384 dimensions
+
 
 def get_embedding(text: str) -> list:
     """Generate embedding using sentence-transformers model"""
     embeddings = embedding_model.encode(text, normalize_embeddings=True)
     return embeddings.tolist()
 
+
 client = Groq(api_key=GROQ_API_KEY)
-llm = ChatGroq(
-    model='llama3-8b-8192',
-    groq_api_key=GROQ_API_KEY,
-    temperature=0.5
-)
+llm = ChatGroq(model="llama3-8b-8192", groq_api_key=GROQ_API_KEY, temperature=0.5)
 
 # Fix deterministic output for langdetect
 DetectorFactory.seed = 0
+
 
 def generate_speech_from_text(text: str, file_name: str = "output_speech.mp3"):
     try:
@@ -92,7 +104,9 @@ def generate_speech_from_text(text: str, file_name: str = "output_speech.mp3"):
         tts.save(full_path)
         return file_name
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to generate speech: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate speech: {str(e)}"
+        )
 
 
 @router.post("/speechToText/")
@@ -107,11 +121,13 @@ async def speech_to_text_route(audio_file: UploadFile = File(...)):
                 model="whisper-large-v3-turbo",
                 response_format="json",
                 language="en",
-                temperature=0.0
+                temperature=0.0,
             )
         transcribed_text = transcription.text
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to transcribe audio: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to transcribe audio: {str(e)}"
+        )
     finally:
         if os.path.exists(temp_wav_file):
             os.remove(temp_wav_file)
@@ -127,6 +143,7 @@ def text_to_speech_route(text: str):
 class LlamaConversationRequest(BaseModel):
     prompt: str
 
+
 @router.post("/llamaConversation/")
 def llama_conversation(request: LlamaConversationRequest):
     try:
@@ -138,8 +155,7 @@ def llama_conversation(request: LlamaConversationRequest):
 
 @router.post("/startSelfIntroduction/")
 async def start_self_introduction(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     try:
         prompt_text = (
@@ -149,28 +165,37 @@ async def start_self_introduction(
         speech_file = generate_speech_from_text(prompt_text, "intro_start.wav")
         return {"ai_prompt": speech_file, "subtitle": prompt_text}
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to generate AI voice prompt.")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate AI voice prompt."
+        )
 
 
 class StopSelfIntroductionRequest(BaseModel):
     transcription: str
 
+
 @router.post("/stopSelfIntroduction/")
 async def stop_self_introduction(
     request: StopSelfIntroductionRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
-        feedback = get_self_intro_feedback_from_llama(request.transcription, db=db, user_id=current_user.id)
-        closing_prompt = (
-            f"Thank you {current_user.full_name} for your introduction. You may now proceed to the next round when you're ready."
+        feedback = get_self_intro_feedback_from_llama(
+            request.transcription, db=db, user_id=current_user.id
         )
+        closing_prompt = f"Thank you {current_user.full_name} for your introduction. You may now proceed to the next round when you're ready."
         speech_file = generate_speech_from_text(closing_prompt, "self_intro_stop.mp3")
-        return {"closing_prompt": speech_file, "feedback": feedback, "subtitle": closing_prompt}
+        return {
+            "closing_prompt": speech_file,
+            "feedback": feedback,
+            "subtitle": closing_prompt,
+        }
     except Exception as e:
         print(f"❌ Error in /stopSelfIntroduction/: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to stop self-introduction: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to stop self-introduction: {e}"
+        )
 
 
 @router.post("/startTechnicalRound/")
@@ -190,14 +215,17 @@ class GenerateTechQuestionRequest(BaseModel):
     prev_question: str = None
     prev_answer: str = None
 
+
 prev_qa_list = []
 
 # Add global set to track asked questions per user
 user_question_history = {}
 
+
 # Add function to generate question hash
 def get_question_hash(question: str) -> str:
     return hashlib.md5(question.lower().encode()).hexdigest()
+
 
 # Add function to check and update question history
 def update_question_history(user_id: int, question_hash: str) -> bool:
@@ -206,49 +234,55 @@ def update_question_history(user_id: int, question_hash: str) -> bool:
     """
     if user_id not in user_question_history:
         user_question_history[user_id] = set()
-    
+
     if question_hash in user_question_history[user_id]:
         return False
-        
+
     user_question_history[user_id].add(question_hash)
     return True
+
 
 # Add function to store questions in Pinecone
 async def store_question_in_pinecone(question: str, category: str, difficulty: str):
     try:
         # Generate embedding for the question
         question_embedding = get_embedding(question)
-        
+
         # Create a unique ID for the question
         question_id = get_question_hash(question)
-        
+
         # Store in Pinecone with metadata
         index.upsert(
-            vectors=[{
-                'id': question_id,
-                'values': question_embedding,
-                'metadata': {
-                    'question': question,
-                    'category': category,
-                    'difficulty': difficulty,
-                    'timestamp': datetime.now().isoformat()
+            vectors=[
+                {
+                    "id": question_id,
+                    "values": question_embedding,
+                    "metadata": {
+                        "question": question,
+                        "category": category,
+                        "difficulty": difficulty,
+                        "timestamp": datetime.now().isoformat(),
+                    },
                 }
-            }]
+            ]
         )
         return True
     except Exception as e:
         print(f"❌ Error storing question in Pinecone: {e}")
         return False
 
+
 @router.post("/generateTechQuestion/")
 async def generate_technical_question(
     request: GenerateTechQuestionRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     try:
         # Get user's profile
-        user_profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+        user_profile = (
+            db.query(Profile).filter(Profile.user_id == current_user.id).first()
+        )
         if not user_profile:
             print("⚠️ User profile not found, using default profile")
             skills = ["Software Development"]
@@ -259,10 +293,9 @@ async def generate_technical_question(
 
         # Store previous Q&A if provided
         if request.prev_question and request.prev_answer:
-            prev_qa_list.append({
-                "question": request.prev_question,
-                "answer": request.prev_answer
-            })
+            prev_qa_list.append(
+                {"question": request.prev_question, "answer": request.prev_answer}
+            )
 
         # Define question categories and difficulties
         question_categories = [
@@ -270,18 +303,24 @@ async def generate_technical_question(
             "System Design",
             "Programming Concepts",
             "Problem Solving",
-            "Software Engineering Practices"
+            "Software Engineering Practices",
         ]
 
         # Add skill-specific categories
         if skills:
             for skill in skills:
                 if "frontend" in skill.lower() or "react" in skill.lower():
-                    question_categories.extend(["Frontend Development", "React", "JavaScript"])
+                    question_categories.extend(
+                        ["Frontend Development", "React", "JavaScript"]
+                    )
                 elif "backend" in skill.lower() or "python" in skill.lower():
-                    question_categories.extend(["Backend Development", "API Design", "Database Systems"])
+                    question_categories.extend(
+                        ["Backend Development", "API Design", "Database Systems"]
+                    )
                 elif "data" in skill.lower():
-                    question_categories.extend(["Data Engineering", "Big Data", "Data Processing"])
+                    question_categories.extend(
+                        ["Data Engineering", "Big Data", "Data Processing"]
+                    )
 
         # Select random category and difficulty
         selected_category = random.choice(question_categories)
@@ -291,8 +330,10 @@ async def generate_technical_question(
         # Try to find existing question from Pinecone first
         try:
             # Generate a random vector to get diverse results
-            random_vector = [random.uniform(-1, 1) for _ in range(384)]  # Updated dimension
-            
+            random_vector = [
+                random.uniform(-1, 1) for _ in range(384)
+            ]  # Updated dimension
+
             # Query Pinecone with filters
             query_response = index.query(
                 vector=random_vector,
@@ -300,13 +341,14 @@ async def generate_technical_question(
                 include_metadata=True,
                 filter={
                     "category": selected_category,
-                    "difficulty": selected_difficulty
-                }
+                    "difficulty": selected_difficulty,
+                },
             )
 
             # Filter out previously asked questions
             fresh_questions = [
-                match for match in query_response.matches
+                match
+                for match in query_response.matches
                 if update_question_history(current_user.id, match.id)
             ]
 
@@ -338,10 +380,10 @@ async def generate_technical_question(
             llm.temperature = 0.8  # Increase randomness
             llama_response = llm.invoke(prompt)
             llm.temperature = 0.5  # Reset temperature
-            
+
             response_text = getattr(llama_response, "content", str(llama_response))
             question_text = response_text.strip()
-            
+
             # Clean up the question
             if question_text.lower().startswith(("here", "technical", "question:")):
                 question_text = question_text.split(":", 1)[-1].strip()
@@ -359,23 +401,24 @@ async def generate_technical_question(
 
         # Generate speech file
         speech_file = generate_speech_from_text(question_text, "technical_question.mp3")
-        
+
         return {
             "new_question": question_text,
             "speech_file": speech_file,
             "category": selected_category,
-            "difficulty": selected_difficulty
+            "difficulty": selected_difficulty,
         }
 
     except Exception as e:
         print(f"❌ Error in generateTechQuestion: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate technical question: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate technical question: {str(e)}"
+        )
 
 
 @router.post("/stopTechRound/")
 async def stop_tech_round(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     Stop the technical round, generate feedback, and return the closing prompt.
@@ -389,10 +432,16 @@ async def stop_tech_round(
         print(f"✅ Generated speech file: {speech_file}")
 
         # Call the function to get feedback
-        feedback = get_technical_feedback_from_llama(prev_qa_list, db=db, user_id=current_user.id)
+        feedback = get_technical_feedback_from_llama(
+            prev_qa_list, db=db, user_id=current_user.id
+        )
         print(f"✅ Feedback from LLaMA: {feedback}")
 
-        return {"closing_prompt": speech_file, "feedback": feedback, "subtitle": closing_prompt}
+        return {
+            "closing_prompt": speech_file,
+            "feedback": feedback,
+            "subtitle": closing_prompt,
+        }
     except Exception as e:
         print(f"❌ Error in /stopTechRound/: {e}")
         raise HTTPException(status_code=500, detail="Failed to stop technical round.")
@@ -400,12 +449,13 @@ async def stop_tech_round(
 
 @router.post("/startMCQRound/", tags=["Interview"])
 async def start_mcq_round(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     try:
         # Get user's profile
-        user_profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
+        user_profile = (
+            db.query(Profile).filter(Profile.user_id == current_user.id).first()
+        )
         if not user_profile:
             print("⚠️ User profile not found, using default profile")
             skills = ["Software Development"]
@@ -423,7 +473,7 @@ async def start_mcq_round(
             "Web Development",
             "Database Management",
             "Software Architecture",
-            "DevOps & Tools"
+            "DevOps & Tools",
         ]
 
         # Construct prompt with more diversity requirements
@@ -443,11 +493,11 @@ async def start_mcq_round(
             f"Return ONLY a JSON array in this format for all 10 questions:Example\n"
             f"[\n"
             f"  {{\n"
-            f"    \"question\": \"What is the time complexity of binary search?\",\n"
-            f"    \"options\": [\"O(1)\", \"O(log n)\", \"O(n)\", \"O(n^2)\"],\n"
-            f"    \"correct_answer\": \"O(log n)\",\n"
-            f"    \"category\": \"Algorithms\",\n"
-            f"    \"difficulty\": \"Medium\"\n"
+            f'    "question": "What is the time complexity of binary search?",\n'
+            f'    "options": ["O(1)", "O(log n)", "O(n)", "O(n^2)"],\n'
+            f'    "correct_answer": "O(log n)",\n'
+            f'    "category": "Algorithms",\n'
+            f'    "difficulty": "Medium"\n'
             f"  }}\n"
             f"]\n"
         )
@@ -456,37 +506,46 @@ async def start_mcq_round(
         llm.temperature = 0.8  # Increase randomness
         llama_response = llm.invoke(prompt)
         llm.temperature = 0.5  # Reset temperature
-        
+
         response_text = getattr(llama_response, "content", str(llama_response))
         print(f"✅ Response text: {response_text}")
         # Clean up and parse the response
-        start_idx = response_text.find('[')
-        end_idx = response_text.rfind(']') + 1
+        start_idx = response_text.find("[")
+        end_idx = response_text.rfind("]") + 1
         if start_idx == -1 or end_idx == 0:
             raise ValueError("Invalid response format from LLaMA")
-            
+
         json_str = response_text[start_idx:end_idx]
         questions_list = json.loads(json_str)
         print(f"✅ Questions list: {questions_list}")
         # Validate and filter questions
         filtered_questions = []
         used_categories = set()
-        
+
         for q in questions_list:
             # Skip if category already used or question invalid
-            if q["category"] in used_categories or not all(key in q for key in ["question", "options", "correct_answer", "category", "difficulty"]):
+            if q["category"] in used_categories or not all(
+                key in q
+                for key in [
+                    "question",
+                    "options",
+                    "correct_answer",
+                    "category",
+                    "difficulty",
+                ]
+            ):
                 continue
-                
+
             # Generate question hash
             question_hash = get_question_hash(q["question"])
-            
+
             # Skip if question was asked before
             if not update_question_history(current_user.id, question_hash):
                 continue
-                
+
             used_categories.add(q["category"])
             filtered_questions.append(q)
-            
+
             # # Store in Pinecone for future use
             # await store_question_in_pinecone(
             #     question=q["question"],
@@ -508,11 +567,12 @@ class SubmitMCQPayload(BaseModel):
     question: str
     answer: str
 
+
 @router.post("/submitMCQ/")
 async def submit_mcq(
     payload: List[SubmitMCQPayload],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Submit MCQ answers, evaluate them using LLaMA, and save the score and feedback.
@@ -522,12 +582,14 @@ async def submit_mcq(
         prompt = (
             "Evaluate the following MCQ answers and provide a final score out of 10 and brief feedback.\n"
             "Return ONLY a JSON response in this exact format: Example\n"
-            "{ \"score\": 8.0, \"feedback\": \"Strong performance on networking and fundamentals.\" }\n\n"
+            '{ "score": 8.0, "feedback": "Strong performance on networking and fundamentals." }\n\n'
             "Questions and Answers to evaluate:\n\n"
         )
         for response in payload:
-            prompt += f"Question: {response.question}\nUser's Answer: {response.answer}\n\n"
-        
+            prompt += (
+                f"Question: {response.question}\nUser's Answer: {response.answer}\n\n"
+            )
+
         prompt += "Remember to return ONLY the JSON response in the specified format."
 
         # Call LLaMA to evaluate the answers
@@ -538,27 +600,36 @@ async def submit_mcq(
         # Extract JSON from the response
         try:
             # Find the last occurrence of a JSON-like structure
-            matches = list(re.finditer(r'{[^{]*"score":\s*\d+\.?\d*[^}]*"feedback":[^}]*}', review))
+            matches = list(
+                re.finditer(r'{[^{]*"score":\s*\d+\.?\d*[^}]*"feedback":[^}]*}', review)
+            )
             if not matches:
                 raise ValueError("No valid JSON structure found in response")
-            
+
             json_str = matches[-1].group()  # Take the last match
             parsed = json.loads(json_str)
-            
+
             # Validate the required fields
             if "score" not in parsed or "feedback" not in parsed:
                 raise ValueError("Missing required fields in JSON response")
-            
+
             # Ensure score is a float
             parsed["score"] = float(parsed["score"])
-            
+
         except (json.JSONDecodeError, ValueError) as e:
             print(f"❌ Error parsing LLaMA response: {e}")
             print(f"❌ Attempted to parse: {review}")
-            raise HTTPException(status_code=500, detail="Failed to parse LLaMA response as JSON.")
+            raise HTTPException(
+                status_code=500, detail="Failed to parse LLaMA response as JSON."
+            )
 
         # Save the score and feedback to the database
-        save_mcq_score(user_id=current_user.id, total_score=parsed['score'], feedback=parsed['feedback'], db=db)
+        save_mcq_score(
+            user_id=current_user.id,
+            total_score=parsed["score"],
+            feedback=parsed["feedback"],
+            db=db,
+        )
 
         return parsed
     except Exception as e:
@@ -566,14 +637,19 @@ async def submit_mcq(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def get_technical_feedback_from_llama(prev_qa_list: List[Dict[str, str]], db: Session, user_id: int):
+def get_technical_feedback_from_llama(
+    prev_qa_list: List[Dict[str, str]], db: Session, user_id: int
+):
     """
     Evaluate the user's technical round responses using LLaMA and save the scores.
     """
     try:
         if not prev_qa_list:
             print("❌ prev_qa_list is empty. Cannot generate feedback.")
-            raise HTTPException(status_code=400, detail="No questions and answers provided for feedback.")
+            raise HTTPException(
+                status_code=400,
+                detail="No questions and answers provided for feedback.",
+            )
 
         # Construct the prompt for LLaMA
         prompt = (
@@ -585,10 +661,10 @@ def get_technical_feedback_from_llama(prev_qa_list: List[Dict[str, str]], db: Se
             "Please analyze all answers together and provide just one overall score and one sentence of feedback (exactly 8-12 words).\n\n"
             "Return ONLY a valid JSON object with these exact keys, nothing else:\n"
             "{\n"
-            "  \"communication_score\": number,\n"
-            "  \"technical_knowledge_score\": number,\n"
-            "  \"confidence_score\": number,\n"
-            "  \"feedback\": \"string\"\n"
+            '  "communication_score": number,\n'
+            '  "technical_knowledge_score": number,\n'
+            '  "confidence_score": number,\n'
+            '  "feedback": "string"\n'
             "}\n\n"
             "Questions and Answers:\n"
         )
@@ -606,22 +682,29 @@ def get_technical_feedback_from_llama(prev_qa_list: List[Dict[str, str]], db: Se
         # Extract JSON from the response
         try:
             # Find JSON-like structure in the response
-            json_start = evaluation_result.find('{')
-            json_end = evaluation_result.rfind('}') + 1
-            
+            json_start = evaluation_result.find("{")
+            json_end = evaluation_result.rfind("}") + 1
+
             if json_start == -1 or json_end == 0:
                 raise ValueError("No JSON structure found in response")
-            
+
             json_str = evaluation_result[json_start:json_end]
             evaluation_data = json.loads(json_str)
 
             # Validate required fields and data types
-            required_fields = ["communication_score", "technical_knowledge_score", "confidence_score", "feedback"]
+            required_fields = [
+                "communication_score",
+                "technical_knowledge_score",
+                "confidence_score",
+                "feedback",
+            ]
             for field in required_fields:
                 if field not in evaluation_data:
                     raise ValueError(f"Missing required field: {field}")
-                
-                if field != "feedback" and not isinstance(evaluation_data[field], (int, float)):
+
+                if field != "feedback" and not isinstance(
+                    evaluation_data[field], (int, float)
+                ):
                     evaluation_data[field] = float(evaluation_data[field])
 
             # Save the score to the database
@@ -631,7 +714,7 @@ def get_technical_feedback_from_llama(prev_qa_list: List[Dict[str, str]], db: Se
                 tech=float(evaluation_data["technical_knowledge_score"]),
                 conf=float(evaluation_data["confidence_score"]),
                 feedback=evaluation_data["feedback"],
-                db=db
+                db=db,
             )
 
             return evaluation_data
@@ -639,14 +722,18 @@ def get_technical_feedback_from_llama(prev_qa_list: List[Dict[str, str]], db: Se
         except json.JSONDecodeError as e:
             print(f"❌ JSON Parse Error: {e}")
             print(f"❌ Attempted to parse: {json_str}")
-            raise HTTPException(status_code=500, detail="Failed to parse evaluation response")
+            raise HTTPException(
+                status_code=500, detail="Failed to parse evaluation response"
+            )
         except ValueError as e:
             print(f"❌ Validation Error: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
     except Exception as e:
         print(f"❌ Error in get_technical_feedback_from_llama(): {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing technical feedback: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error processing technical feedback: {str(e)}"
+        )
 
 
 def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: int):
@@ -667,7 +754,7 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
             "Highlight relevant skills and experience",
             "Express enthusiasm for the target role",
             "Share a brief career goal or objective",
-            "Maintain professional tone throughout"
+            "Maintain professional tone throughout",
         ]
 
         prompt = (
@@ -675,32 +762,37 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
             f"skills in: {', '.join(skills)}.\n\n"
             f"Key elements to look for:\n"
             f"{chr(10).join('- ' + pattern for pattern in ideal_patterns)}\n\n"
-            f"Candidate's Transcript:\n\"{transcript}\"\n\n"
+            f'Candidate\'s Transcript:\n"{transcript}"\n\n'
             f"Score the candidate in these categories (out of 10):\n"
             f"- communication_score: Clarity, structure, and effectiveness of communication\n"
             f"- confidence_score: Confidence level and presence\n"
             f"- professionalism_score: Professional tone and relevance to role\n\n"
             f"Also provide a one-sentence feedback focusing on strengths and areas for improvement.\n\n"
             f"Respond ONLY in this JSON format: Example\n"
-            f"{{\"communication_score\": 8.5, \"confidence_score\": 9.0, "
-            f"\"professionalism_score\": 8.0, \"feedback\": \"Clear, confident and concise.\"}}"
+            f'{{"communication_score": 8.5, "confidence_score": 9.0, '
+            f'"professionalism_score": 8.0, "feedback": "Clear, confident and concise."}}'
         )
 
         # Get response from LLaMA
         llama_response = llm.invoke(prompt)
         response_text = getattr(llama_response, "content", str(llama_response))
-        
+
         # Clean up the response to ensure it's valid JSON
-        start_idx = response_text.find('{')
-        end_idx = response_text.rfind('}') + 1
+        start_idx = response_text.find("{")
+        end_idx = response_text.rfind("}") + 1
         if start_idx == -1 or end_idx == 0:
             raise ValueError("Invalid response format from LLaMA")
-            
+
         json_str = response_text[start_idx:end_idx]
         evaluation = json.loads(json_str)
 
         # Validate the evaluation data
-        required_fields = ["communication_score", "confidence_score", "professionalism_score", "feedback"]
+        required_fields = [
+            "communication_score",
+            "confidence_score",
+            "professionalism_score",
+            "feedback",
+        ]
         if not all(field in evaluation for field in required_fields):
             raise ValueError("Missing required fields in evaluation response")
 
@@ -711,7 +803,7 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
             conf=float(evaluation["confidence_score"]),
             prof=float(evaluation["professionalism_score"]),
             feedback=evaluation["feedback"],
-            db=db
+            db=db,
         )
 
         return evaluation
@@ -721,14 +813,15 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
         raise HTTPException(status_code=500, detail="Failed to parse feedback response")
     except Exception as e:
         print(f"❌ Error in self-intro feedback: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing self-introduction feedback: {str(e)}")
-
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error processing self-introduction feedback: {str(e)}",
+        )
 
 
 @router.get("/interview/summary/")
 async def interview_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     Retrieve the summary of the last 3 attempts for all interview rounds.
@@ -748,13 +841,14 @@ async def interview_summary(
         }
     except Exception as e:
         print(f"❌ Error in /interview/summary: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve interview summary.")
+        raise HTTPException(
+            status_code=500, detail="Failed to retrieve interview summary."
+        )
 
 
 @router.post("/interview/overall-evaluation/")
 async def overall_evaluation(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """
     Generate an overall evaluation score and feedback based on all rounds.
@@ -766,7 +860,9 @@ async def overall_evaluation(
         technical_scores = get_technical_scores(current_user.id, db)
 
         if not (self_intro_scores or mcq_scores or technical_scores):
-            raise HTTPException(status_code=400, detail="No interview data available for evaluation.")
+            raise HTTPException(
+                status_code=400, detail="No interview data available for evaluation."
+            )
 
         # Construct the prompt for LLaMA
         prompt = (
@@ -783,7 +879,7 @@ async def overall_evaluation(
             "Technical Round Scores:\n"
             f"{technical_scores}\n\n"
             "Return ONLY in this JSON format:\n"
-            "{\"overall_score\": 85, \"summary_feedback\": \"Excellent communication and solid technical skills. Could show more confidence under pressure.\"}"
+            '{"overall_score": 85, "summary_feedback": "Excellent communication and solid technical skills. Could show more confidence under pressure."}'
         )
 
         print(f"📜 Prompt for LLaMA: {prompt}")
@@ -795,4 +891,6 @@ async def overall_evaluation(
         return evaluation
     except Exception as e:
         print(f"❌ Error in /interview/overall-evaluation/: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate overall evaluation.")
+        raise HTTPException(
+            status_code=500, detail="Failed to generate overall evaluation."
+        )
