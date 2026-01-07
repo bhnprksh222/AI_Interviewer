@@ -40,9 +40,9 @@ app.include_router(interview_router, prefix="/api", tags=["Interview"])
 
 @app.on_event("startup")
 async def startup_event():
-    print("📢 Initializing Database...")
+    print("Initializing Database...")
     Base.metadata.create_all(bind=engine)
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
 
 
 @app.get("/")

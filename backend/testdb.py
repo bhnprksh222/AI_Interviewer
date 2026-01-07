@@ -13,8 +13,8 @@ SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 try:
     db = SessionLocal()
     with engine.connect() as conn:
-        print("✅ Database connection successful!")
+        print("Database connection successful!")
 except Exception as e:
-    print(f"❌ Database connection failed: {e}")
+    print(f"Database connection failed: {e}")
 finally:
     db.close()

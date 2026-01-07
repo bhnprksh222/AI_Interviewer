@@ -7,7 +7,6 @@ sys.path.append(
 from langchain_groq import ChatGroq  # Now import should work
 from dotenv import load_dotenv
 
-# from models.data_clean import initialize_chromadb
 from bs4 import BeautifulSoup
 import os
 

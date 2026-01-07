@@ -1,6 +1,6 @@
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from sqlalchemy.orm import Session
-from typing import List, Dict, Set
+from typing import List, Dict
 from pydantic import BaseModel
 from datetime import datetime
 import os
@@ -16,11 +16,6 @@ import re
 from backend.database import get_db
 from backend.models.user import User
 from backend.models.profile import Profile
-from backend.models.round_scores import (
-    MCQRoundScore,
-    TechnicalRoundScore,
-    SelfIntroductionScore,
-)
 from backend.services.round_service import (
     save_mcq_score,
     save_technical_score,
@@ -30,38 +25,34 @@ from backend.services.round_service import (
     get_self_intro_scores,
 )
 from backend.services.auth_service import get_current_user
-import pinecone
 from sentence_transformers import SentenceTransformer
 
-# from llama_cpp import Llama
 from pinecone import Pinecone, ServerlessSpec
 from groq import Groq
 from langchain_groq import ChatGroq
-from transformers import AutoTokenizer, AutoModel
-import torch
 
 DetectorFactory.seed = 0
 router = APIRouter()
 
 
-# ✅ Load environment variables
+# Load environment variables
 load_dotenv()
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 
-# ✅ Safety check for keys
+# Safety check for keys
 if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY is not found. Please check your .env file.")
+    raise ValueError("GROQ_API_KEY is not found. Please check your .env file.")
 
 if not PINECONE_API_KEY:
-    raise ValueError("❌ PINECONE_API_KEY is not found. Please check your .env file.")
+    raise ValueError("PINECONE_API_KEY is not found. Please check your .env file.")
 
-# ✅ Initialize Pinecone with supported region for free-tier users
+#  Initialize Pinecone with supported region for free-tier users
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index_name = "aiinterviewer"
-allowed_region = "us-east-1"  # ✅ Use this to avoid INVALID_ARGUMENT error
+allowed_region = "us-east-1"  #  Use this to avoid INVALID_ARGUMENT error
 
-# ✅ Create index only if not exists
+#  Create index only if not exists
 existing_indexes = [i.name for i in pc.list_indexes()]
 if index_name not in existing_indexes:
     pc.create_index(
@@ -192,7 +183,7 @@ async def stop_self_introduction(
             "subtitle": closing_prompt,
         }
     except Exception as e:
-        print(f"❌ Error in /stopSelfIntroduction/: {e}")
+        print(f"Error in /stopSelfIntroduction/: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to stop self-introduction: {e}"
         )
@@ -268,7 +259,7 @@ async def store_question_in_pinecone(question: str, category: str, difficulty: s
         )
         return True
     except Exception as e:
-        print(f"❌ Error storing question in Pinecone: {e}")
+        print(f"Error storing question in Pinecone: {e}")
         return False
 
 
@@ -284,7 +275,7 @@ async def generate_technical_question(
             db.query(Profile).filter(Profile.user_id == current_user.id).first()
         )
         if not user_profile:
-            print("⚠️ User profile not found, using default profile")
+            print("User profile not found, using default profile")
             skills = ["Software Development"]
             preferred_role = "Software Engineer"
         else:
@@ -356,12 +347,12 @@ async def generate_technical_question(
                 # Use a random question from fresh ones
                 selected_question = random.choice(fresh_questions)
                 question_text = selected_question.metadata["question"]
-                print(f"✅ Using existing question from Pinecone: {question_text}")
+                print(f"Using existing question from Pinecone: {question_text}")
             else:
                 # Generate new question if no fresh ones found
                 raise Exception("No fresh questions found in Pinecone")
         except Exception as e:
-            print(f"⚠️ Pinecone query failed or no fresh questions: {e}")
+            print(f"Pinecone query failed or no fresh questions: {e}")
             # Generate new question using LLaMA
             prompt = (
                 f"You are conducting a technical interview for a {preferred_role} position. face to face interview so that ask question in a way candidate answer in few words.\n"
@@ -410,7 +401,7 @@ async def generate_technical_question(
         }
 
     except Exception as e:
-        print(f"❌ Error in generateTechQuestion: {str(e)}")
+        print(f"Error in generateTechQuestion: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Failed to generate technical question: {str(e)}"
         )
@@ -429,13 +420,13 @@ async def stop_tech_round(
         # Generate the closing prompt
         closing_prompt = f"Awesome {current_user.full_name}, You've wrapped up the technical round. Great job! Hit submit to head back to the dashboard."
         speech_file = generate_speech_from_text(closing_prompt, "technical_stop.mp3")
-        print(f"✅ Generated speech file: {speech_file}")
+        print(f"Generated speech file: {speech_file}")
 
         # Call the function to get feedback
         feedback = get_technical_feedback_from_llama(
             prev_qa_list, db=db, user_id=current_user.id
         )
-        print(f"✅ Feedback from LLaMA: {feedback}")
+        print(f"Feedback from LLaMA: {feedback}")
 
         return {
             "closing_prompt": speech_file,
@@ -443,7 +434,7 @@ async def stop_tech_round(
             "subtitle": closing_prompt,
         }
     except Exception as e:
-        print(f"❌ Error in /stopTechRound/: {e}")
+        print(f"Error in /stopTechRound/: {e}")
         raise HTTPException(status_code=500, detail="Failed to stop technical round.")
 
 
@@ -457,7 +448,7 @@ async def start_mcq_round(
             db.query(Profile).filter(Profile.user_id == current_user.id).first()
         )
         if not user_profile:
-            print("⚠️ User profile not found, using default profile")
+            print("User profile not found, using default profile")
             skills = ["Software Development"]
             preferred_role = "Software Engineer"
         else:
@@ -508,7 +499,7 @@ async def start_mcq_round(
         llm.temperature = 0.5  # Reset temperature
 
         response_text = getattr(llama_response, "content", str(llama_response))
-        print(f"✅ Response text: {response_text}")
+        print(f"Response text: {response_text}")
         # Clean up and parse the response
         start_idx = response_text.find("[")
         end_idx = response_text.rfind("]") + 1
@@ -517,7 +508,7 @@ async def start_mcq_round(
 
         json_str = response_text[start_idx:end_idx]
         questions_list = json.loads(json_str)
-        print(f"✅ Questions list: {questions_list}")
+        print(f"Questions list: {questions_list}")
         # Validate and filter questions
         filtered_questions = []
         used_categories = set()
@@ -559,7 +550,7 @@ async def start_mcq_round(
         return {"questions": questions_list}
 
     except Exception as e:
-        print(f"❌ Error in startMCQRound: {str(e)}")
+        print(f"Error in startMCQRound: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error generating MCQs: {str(e)}")
 
 
@@ -595,7 +586,7 @@ async def submit_mcq(
         # Call LLaMA to evaluate the answers
         llama_response = llm.invoke(prompt)
         review = getattr(llama_response, "content", str(llama_response))
-        print(f"✅ Raw LLaMA Response: {review}")  # Log the raw response
+        print(f"Raw LLaMA Response: {review}")  # Log the raw response
 
         # Extract JSON from the response
         try:
@@ -617,8 +608,8 @@ async def submit_mcq(
             parsed["score"] = float(parsed["score"])
 
         except (json.JSONDecodeError, ValueError) as e:
-            print(f"❌ Error parsing LLaMA response: {e}")
-            print(f"❌ Attempted to parse: {review}")
+            print(f"Error parsing LLaMA response: {e}")
+            print(f"Attempted to parse: {review}")
             raise HTTPException(
                 status_code=500, detail="Failed to parse LLaMA response as JSON."
             )
@@ -633,7 +624,7 @@ async def submit_mcq(
 
         return parsed
     except Exception as e:
-        print(f"❌ Error in submitMCQ: {e}")
+        print(f"Error in submitMCQ: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -645,7 +636,7 @@ def get_technical_feedback_from_llama(
     """
     try:
         if not prev_qa_list:
-            print("❌ prev_qa_list is empty. Cannot generate feedback.")
+            print("prev_qa_list is empty. Cannot generate feedback.")
             raise HTTPException(
                 status_code=400,
                 detail="No questions and answers provided for feedback.",
@@ -672,12 +663,12 @@ def get_technical_feedback_from_llama(
         for qa in prev_qa_list:
             prompt += f"Question: {qa['question']}\nAnswer: {qa['answer']}\n\n"
 
-        print(f"📜 Prompt for LLaMA: {prompt}")
+        print(f"Prompt for LLaMA: {prompt}")
 
         # Call LLaMA to evaluate the responses
         llama_response = llm.invoke(prompt)
         evaluation_result = getattr(llama_response, "content", str(llama_response))
-        print(f"✅ Raw LLaMA Response: {evaluation_result}")
+        print(f"Raw LLaMA Response: {evaluation_result}")
 
         # Extract JSON from the response
         try:
@@ -720,17 +711,17 @@ def get_technical_feedback_from_llama(
             return evaluation_data
 
         except json.JSONDecodeError as e:
-            print(f"❌ JSON Parse Error: {e}")
-            print(f"❌ Attempted to parse: {json_str}")
+            print(f"JSON Parse Error: {e}")
+            print(f"Attempted to parse: {json_str}")
             raise HTTPException(
                 status_code=500, detail="Failed to parse evaluation response"
             )
         except ValueError as e:
-            print(f"❌ Validation Error: {e}")
+            print(f"Validation Error: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
     except Exception as e:
-        print(f"❌ Error in get_technical_feedback_from_llama(): {e}")
+        print(f"Error in get_technical_feedback_from_llama(): {e}")
         raise HTTPException(
             status_code=500, detail=f"Error processing technical feedback: {str(e)}"
         )
@@ -741,7 +732,7 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
         # Get user's profile to access skills and preferred role
         user_profile = db.query(Profile).filter(Profile.user_id == user_id).first()
         if not user_profile:
-            print("⚠️ User profile not found, using default profile")
+            print("User profile not found, using default profile")
             skills = ["Software Development"]
             preferred_role = "Software Engineer"
         else:
@@ -808,11 +799,11 @@ def get_self_intro_feedback_from_llama(transcript: str, db: Session, user_id: in
 
         return evaluation
     except json.JSONDecodeError as e:
-        print(f"❌ JSON Parse Error in self-intro feedback: {e}")
-        print(f"❌ Raw response: {response_text}")
+        print(f"JSON Parse Error in self-intro feedback: {e}")
+        print(f"Raw response: {response_text}")
         raise HTTPException(status_code=500, detail="Failed to parse feedback response")
     except Exception as e:
-        print(f"❌ Error in self-intro feedback: {str(e)}")
+        print(f"Error in self-intro feedback: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail=f"Error processing self-introduction feedback: {str(e)}",
@@ -840,7 +831,7 @@ async def interview_summary(
             "technical": technical_scores,
         }
     except Exception as e:
-        print(f"❌ Error in /interview/summary: {e}")
+        print(f"Error in /interview/summary: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to retrieve interview summary."
         )
@@ -882,7 +873,7 @@ async def overall_evaluation(
             '{"overall_score": 85, "summary_feedback": "Excellent communication and solid technical skills. Could show more confidence under pressure."}'
         )
 
-        print(f"📜 Prompt for LLaMA: {prompt}")
+        print(f"Prompt for LLaMA: {prompt}")
 
         # Call LLaMA to generate the overall evaluation
         llama_response = llm.invoke(prompt)
@@ -890,7 +881,7 @@ async def overall_evaluation(
 
         return evaluation
     except Exception as e:
-        print(f"❌ Error in /interview/overall-evaluation/: {e}")
+        print(f"Error in /interview/overall-evaluation/: {e}")
         raise HTTPException(
             status_code=500, detail="Failed to generate overall evaluation."
         )

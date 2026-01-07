@@ -24,17 +24,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-# ✅ Hash Password
+# Hash Password
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-# ✅ Verify Password
+# Verify Password
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-# ✅ Create JWT Token
+# Create JWT Token
 def create_jwt_token(
     data: dict, expires_delta: timedelta = timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
 ):
@@ -44,12 +44,12 @@ def create_jwt_token(
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-# ✅ Verify JWT Token
+#  Verify JWT Token
 def verify_jwt_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError:  # ✅ Replace InvalidTokenError with JWTError
+    except JWTError:
         raise HTTPException(
             status_code=401,
             detail="Invalid token",
@@ -61,7 +61,7 @@ def verify_jwt_token(token: str):
         )
 
 
-# ✅ Get Current User (NEWLY ADDED FUNCTION)
+# Get Current User (NEWLY ADDED FUNCTION)
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):

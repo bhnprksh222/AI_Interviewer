@@ -11,7 +11,7 @@ def save_mcq_score(user_id: int, total_score: float, feedback: str, db: Session)
     db.add(score)
     db.commit()
     db.refresh(score)
-    print(f"✅ MCQ score saved: {score}")
+    print(f"MCQ score saved: {score}")
 
 
 def save_technical_score(
@@ -27,7 +27,7 @@ def save_technical_score(
     db.add(score)
     db.commit()
     db.refresh(score)
-    print(f"✅ Technical round score saved: {score}")
+    print(f"Technical round score saved: {score}")
 
 
 def save_intro_score(
@@ -43,7 +43,7 @@ def save_intro_score(
     db.add(score)
     db.commit()
     db.refresh(score)
-    print(f"✅ Self-introduction score saved: {score}")
+    print(f"Self-introduction score saved: {score}")
 
 
 def get_self_intro_scores(user_id: int, db: Session):
@@ -69,7 +69,7 @@ def get_self_intro_scores(user_id: int, db: Session):
             for score in scores
         ]
     except Exception as e:
-        print(f"❌ Error retrieving self-introduction scores: {e}")
+        print(f"Error retrieving self-introduction scores: {e}")
         return []
 
 
@@ -94,7 +94,7 @@ def get_mcq_scores(user_id: int, db: Session):
             for score in scores
         ]
     except Exception as e:
-        print(f"❌ Error retrieving MCQ scores: {e}")
+        print(f"Error retrieving MCQ scores: {e}")
         return []
 
 
@@ -121,5 +121,5 @@ def get_technical_scores(user_id: int, db: Session):
             for score in scores
         ]
     except Exception as e:
-        print(f"❌ Error retrieving technical scores: {e}")
+        print(f"Error retrieving technical scores: {e}")
         return []

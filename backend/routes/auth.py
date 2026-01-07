@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer
 from backend.database import get_db
@@ -7,7 +7,6 @@ from backend.services.auth_service import (
     hash_password,
     verify_password,
     create_jwt_token,
-    verify_jwt_token,
 )
 from pydantic import BaseModel, EmailStr
 
@@ -16,7 +15,7 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
-# ✅ User Signup Model
+# User Signup Model
 class SignupModel(BaseModel):
     username: str
     email: EmailStr
@@ -25,13 +24,13 @@ class SignupModel(BaseModel):
     confirm_password: str
 
 
-# ✅ User Login Model
+# User Login Model
 class LoginModel(BaseModel):
     email: EmailStr
     password: str
 
 
-# ✅ User Signup Route
+# User Signup Route
 @router.post("/signup/")
 def signup(user: SignupModel, db: Session = Depends(get_db)):
     print("user.full_name:", user.fullname)
@@ -58,7 +57,7 @@ def signup(user: SignupModel, db: Session = Depends(get_db)):
     return {"message": "User registered successfully"}
 
 
-# ✅ User Login Route
+# User Login Route
 @router.post("/login/")
 def login(user: LoginModel, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.email == user.email).first()
